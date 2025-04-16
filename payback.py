@@ -125,7 +125,7 @@ def main():
         
         # Admin Contact
         input("\n[!] Press Enter to contact Payback Admin...")
-        os.system(f"xdg-open {https://wa.link/s0uj6k")
+        os.system(f"xdg-open {wa.link/s0uj6k")
 
 if __name__ == "__main__":
     main()
