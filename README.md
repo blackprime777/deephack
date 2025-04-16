@@ -19,10 +19,14 @@ Root/admin access (for nmap scans)
 🚀 Installation Guide
 Kali Linux
 
+# 🔐 Payback Tool v1.1
+```bash
+
 sudo apt update && sudo apt install -y nmap python3-pip git
 git clone https://github.com/blackprime777/deephack.git
 cd deephack
 pip install -r requirements.txt
+sudo python3 payback.py
 
 Termux (Android)
 
@@ -31,12 +35,8 @@ git clone https://github.com/blackprime777/deephack.git
 cd deephack
 pip install -r requirements.txt
 
-## 🔐 Running as Root
 
-1. **Recommended**: Use Kali Linux live session  
-2. Execute with:  
-   ```bash
-   sudo python3 payback.py
+
 
 
 🔑 Authentication
