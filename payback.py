@@ -43,23 +43,20 @@ def scan_network():
     try:
         import nmap
         nm = nmap.PortScanner()
-        target = f"{get_local_ip()}/24"  # Scan entire subnet
+        ip = requests.get("https://api.ipify.org", timeout=10).text
+        print(f"[*] Scanning {ip}...")
+        nm.scan(hosts=ip, arguments='-F')  # Fast scan
         
-        print(f"\n[+] Scanning network {target}...")
-        nm.scan(hosts=target, arguments='-T4 -F --open')  # Fast scan for open ports
-        
+        # Proper results formatting
         results = []
         for host in nm.all_hosts():
             if nm[host].state() == 'up':
-                host_entry = f"\nHost: {host} ({nm[host].hostname() or 'no hostname'})"
                 for proto in nm[host].all_protocols():
-                    ports = sorted(nm[host][proto].keys())
+                    ports = nm[host][proto].keys()
                     for port in ports:
-                        service = nm[host][proto][port]['name']
-                        state = nm[host][proto][port]['state']
-                        results.append(f"{host_entry}\n- {proto}/{port} ({service}): {state}")
+                        results.append(f"Port {port}/{proto}: {nm[host][proto][port]['state']}")
         
-        return "\n".join(results) if results else "No active hosts found"
+        return "\n".join(results) if results else "No open ports found"
     except Exception as e:
         return f"Scan error: {str(e)}"
     finally:
