@@ -31,6 +31,16 @@ git clone https://github.com/blackprime777/deephack.git
 cd deephack
 pip install -r requirements.txt
 
+## 🔐 Running as Root
+
+1. **Recommended**: Use Kali Linux live session  
+2. Execute with:  
+   ```bash
+   sudo python3 payback.py
+
+If nmap fails:
+sudo apt reinstall nmap && sudo chmod 4755 /usr/bin/nmap
+
 🔑 Authentication
 Required Credentials:
 
