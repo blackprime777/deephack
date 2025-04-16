@@ -98,9 +98,14 @@ def main():
     if not "@" in email or len(getpass("[?] Password: ")) < 6:
         exit("[!] Credentials failed. Session terminated.")
 
-    print("[*] Scanning network...")
-    scan_data = scan_network()
-    print(f"[+] Open ports: {scan_data}")
+  print("\n[+] Scan Results:")
+print("-" * 40)  # Visual divider
+if isinstance(scan_data, str):
+    print(scan_data)  # For error messages
+else:
+    for port, info in scan_data.items():
+        print(f"Port {port}: {info['state']} ({info['name']})")
+print("-" * 40)
 
     if input("[?] Target wallet address: ") and input("[?] Amount: $"):
         fake_brute_force()
