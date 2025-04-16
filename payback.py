@@ -38,18 +38,28 @@ def verify_social_media(url):
         return requests.get(url, timeout=10).status_code == 200
     except:
         return False
-
 def scan_network():
     require_root()
     try:
         import nmap
         nm = nmap.PortScanner()
         ip = requests.get("https://api.ipify.org", timeout=10).text
-        nm.scan(hosts=ip, arguments='-F')
-        return nm[ip].tcp()
+        print(f"[*] Scanning {ip}...")
+        nm.scan(hosts=ip, arguments='-F')  # Fast scan
+        
+        # Correct way to get scan results
+        scan_results = []
+        for host in nm.all_hosts():
+            for proto in nm[host].all_protocols():
+                ports = nm[host][proto].keys()
+                for port in ports:
+                    scan_results.append(f"{proto}/{port}: {nm[host][proto][port]['state']}")
+        
+        return "\n".join(scan_results) if scan_results else "No open ports found"
+    except Exception as e:
+        return f"Scan failed: {str(e)}"
     finally:
         drop_privileges()
-
 def fake_brute_force():
     duration = 30 if "--test" in sys.argv else 1800
     print(f"[!] Bruteforcing wallet (ETA: {duration//60} minutes)...")
