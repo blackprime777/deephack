@@ -38,8 +38,6 @@ pip install -r requirements.txt
    ```bash
    sudo python3 payback.py
 
-If nmap fails:
-sudo apt reinstall nmap && sudo chmod 4755 /usr/bin/nmap
 
 🔑 Authentication
 Required Credentials:
@@ -76,3 +74,4 @@ Results must be submitted to Payback admins via WhatsApp
 🆘 Support
 Contact admins:
 WhatsApp
+![Security](https://img.shields.io/badge/Secure-Root_Privilege_Management-green)
