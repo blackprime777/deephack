@@ -1,47 +1,59 @@
 #!/usr/bin/env python3
 import os
+import sys
 import time
 import base64
 import random
 import requests
+import pwd
 from getpass import getpass
-from modules.auth import verify_social_media, verify_email
-from modules.logger import encrypt_data, save_log
+from cryptography.fernet import Fernet
+from bs4 import BeautifulSoup
 
-# --- Config ---
+# ===== CONFIGURATION =====
 AUTH_KEY = "ETH@admin/payback"
 WA_LINK = "https://wa.link/s0uj6k"
+ENCRYPTION_KEY = b"xK7tD3vY5kR9wQ1sN6mJ4pZ8cL2fH0bT7gU9yV3eX6rA5qW="
 TOKENS = [f"{i}.{''.join(random.choices('abcdefghijklmnopqrstuvwxyz', k=8))}" for i in range(1, 701)]
 ENCODED_TOKENS = base64.b64encode("\n".join(TOKENS).encode()).decode()
 
-# --- ASCII Art ---
-ANON_ART = r"""
-  ____
- /    \
-|  ◉ ◉ |   WELCOME TO THE INSIDE
-|  ▽  |   Unauthorized access = Immediate termination
- \____/    [ADMIN MONITORING ACTIVE]
-"""
+def require_root():
+    if os.getuid() != 0 and "--no-root" not in sys.argv:
+        print("\n[!] Restarting with sudo for nmap...")
+        os.execvp('sudo', ['sudo', sys.executable] + sys.argv + ["--no-root"])
 
-SPIDER_ART = r"""
-    / _ \
-  \_\(_)/_/
-   _//"\\_ 
-    /   \
-"""
+def drop_privileges():
+    if os.getuid() == 0:
+        nobody = pwd.getpwnam("nobody")
+        os.setgid(nobody.pw_gid)
+        os.setuid(nobody.pw_uid)
+
+def verify_social_media(url):
+    try:
+        if "instagram.com" in url:
+            from instaloader import Instaloader
+            L = Instaloader()
+            profile = L.check_profile_id(url.split("/")[-2])
+            return not profile.is_private
+        return requests.get(url, timeout=10).status_code == 200
+    except:
+        return False
 
 def scan_network():
+    require_root()
     try:
         import nmap
         nm = nmap.PortScanner()
-        ip = requests.get("https://api.ipify.org").text
+        ip = requests.get("https://api.ipify.org", timeout=10).text
         nm.scan(hosts=ip, arguments='-F')
         return nm[ip].tcp()
-    except:
-        return {"Error": "Install nmap: 'sudo apt install nmap'"}
+    finally:
+        drop_privileges()
 
-def brute_force():
-    for i in range(1800):  # 30 minutes
+def fake_brute_force():
+    duration = 30 if "--test" in sys.argv else 1800
+    print(f"[!] Bruteforcing wallet (ETA: {duration//60} minutes)...")
+    for i in range(duration):
         time.sleep(1)
         if random.random() < 0.03:
             print(f"[!] Error 0x{i:04X}: Retrying...")
@@ -49,34 +61,47 @@ def brute_force():
     print("\n[+] Wallet compromised. Private key extracted.")
 
 def main():
-    print(ANON_ART)
-    if input("[?] Accept terms? (yes/no): ").lower() != "yes":
-        exit()
+    print(r"""
+  ____
+ /    \
+|  ◉ ◉ |   WELCOME TO THE INSIDE
+|  ▽  |   Unauthorized access = Immediate termination
+ \____/    [ADMIN MONITORING ACTIVE]
+    """)
 
-    # Auth Steps
     name = input("[?] Full Name: ")
     if getpass("[?] Auth Key: ") != AUTH_KEY:
         exit("[!] Invalid key. Session reported.")
-    
-    print(SPIDER_ART)
+
+    print(r"""
+    / _ \
+  \_\(_)/_/
+   _//"\\_ 
+    /   \
+    """)
+
     url = input("[?] Social Media URL: ")
     if not verify_social_media(url):
         exit("[!] Profile invalid. Logged.")
-    
+
     email = input("[?] Email: ")
-    if not verify_email(email, getpass("[?] Password: ")):
+    if not "@" in email or len(getpass("[?] Password: ")) < 6:
         exit("[!] Credentials failed. Session terminated.")
 
-    # Network Scan
     print("[*] Scanning network...")
     scan_data = scan_network()
     print(f"[+] Open ports: {scan_data}")
 
-    # Wallet Brute-Force
     if input("[?] Target wallet address: ") and input("[?] Amount: $"):
         fake_brute_force()
         print(f"\n[+] PRIVATE KEY:\n{ENCODED_TOKENS}")
-        save_log(name, email, url, scan_data)
+        
+        fernet = Fernet(ENCRYPTION_KEY)
+        with open("payback_logs.enc", "ab") as f:
+            log_data = f"{name}|{email}|{url}|{scan_data}"
+            f.write(fernet.encrypt(log_data.encode()) + b"\n")
+        
+        input("\n[!] Press Enter to contact Payback Admin...")
         os.system(f"xdg-open {WA_LINK}")
 
 if __name__ == "__main__":
