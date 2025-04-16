@@ -1,5 +1,12 @@
 # deephack
 Da Payback Community 
+# LEGAL WARNING
+- SECURITY NOTICE:
+1. All tool activity is automatically logged and encrypted
+2. Logs include: IPs, timestamps, authentication attempts, and target data
+3. Unauthorized testing will result in:
+   - Immediate session termination
+   - Legal reporting to relevant authorities
 
 # Installation
 ```bash
