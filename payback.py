@@ -4,6 +4,7 @@ import time
 import random
 import nmap
 import base64
+from getpass import getpass
 from cryptography.fernet import Fernet
 from colorama import Fore, Style, init
 
@@ -13,6 +14,7 @@ init(autoreset=True)
 # Configuration
 AUTH_KEY = "ETH@admin/payback"
 ENCRYPT_KEY = Fernet(b'TadCslen4-lxCNLNOUtAfB2E2V8vWdqLjb5GoxSXfC4=')
+WA_LINK = "https://wa.link/s0uj6k"
 
 class ProfessionalScanner:
     def __init__(self):
@@ -22,49 +24,55 @@ class ProfessionalScanner:
         """Professional Nmap scan with -sS -sV -sC -A -O -T4"""
         print(f"\n{Fore.YELLOW}[⚡] INITIATING ADVANCED NETWORK RECON{Style.RESET_ALL}")
         
-        # Phase 1: Host Discovery
-        self._animate_scan("Host Discovery", "-sn", target)
-        
-        # Phase 2: Port Scanning 
-        self._animate_scan("Port Scanning", "-sS -T4", target)
-        
-        # Phase 3: Service Detection
-        self._animate_scan("Service Detection", "-sV", target)
-        
-        # Phase 4: Full Assessment
-        print(f"{Fore.BLUE}[4/4] Full Assessment (-sS -sV -sC -A -O -T4){Style.RESET_ALL}")
-        results = self.nm.scan(
-            hosts=target,
-            arguments='-sS -sV -sC -A -O -T4 --script vuln'
-        )
-        
-        print(f"{Fore.GREEN}[✓] SCAN COMPLETED{Style.RESET_ALL}")
-        return self._format_results(results)
+        try:
+            # Run complete scan
+            print(f"{Fore.BLUE}[1/1] Running Comprehensive Scan{Style.RESET_ALL}")
+            self._animate_scan(target)
+            
+            results = self.nm.scan(
+                hosts=target,
+                arguments='-sS -sV -sC -A -O -T4 --script vuln'
+            )
+            
+            print(f"{Fore.GREEN}[✓] SCAN COMPLETED{Style.RESET_ALL}")
+            return self._format_results(results)
+            
+        except Exception as e:
+            print(f"{Fore.RED}[✗] SCAN FAILED: {str(e)}{Style.RESET_ALL}")
+            return {}
 
-    def _animate_scan(self, phase, arguments, target):
-        """Hollywood-style scan animation"""
+    def _animate_scan(self, target):
+        """Scan animation with progress"""
         frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-        print(f"{Fore.BLUE}[{phase}]{Style.RESET_ALL}", end=" ")
-        for _ in range(10):
+        for _ in range(15):
             for frame in frames:
-                print(f"\r{Fore.BLUE}[{phase}]{Style.RESET_ALL} {frame}", end="", flush=True)
+                print(f"\r{Fore.BLUE}Scanning {target} {frame}{Style.RESET_ALL}", end="", flush=True)
                 time.sleep(0.1)
-        self.nm.scan(hosts=target, arguments=arguments)
+        print()
 
     def _format_results(self, results):
-        """Format results with vulnerabilities"""
+        """Robust result formatting with error handling"""
         formatted = {}
-        for host in results['scan']:
+        for host in results.get('scan', {}):
+            # Safe OS detection
+            os_matches = results['scan'][host].get('osmatch', [])
+            os_guess = os_matches[0].get('name', 'Unknown') if os_matches else 'Unknown'
+            
             formatted[host] = {
-                'os': results['scan'][host].get('osmatch', [{}])[0].get('name', 'Unknown'),
+                'os': os_guess,
                 'ports': [],
                 'vulns': []
             }
             
+            # Port and service detection
             for proto in results['scan'][host].all_protocols():
-                for port in results['scan'][host][proto]:
-                    service = results['scan'][host][proto][port]
-                    formatted[host]['ports'].append(f"{port}/{proto} - {service['name']} {service.get('product', '')} {service.get('version', '')}")
+                for port, service in results['scan'][host][proto].items():
+                    service_info = f"{port}/{proto} - {service['name']}"
+                    if 'product' in service:
+                        service_info += f" {service['product']}"
+                    if 'version' in service:
+                        service_info += f" {service['version']}"
+                    formatted[host]['ports'].append(service_info)
                     
                     # Simulate vulnerabilities
                     if random.random() > 0.6:
@@ -72,8 +80,8 @@ class ProfessionalScanner:
                             random.choice([
                                 f"CVE-2023-{random.randint(1000,9999)}: Buffer Overflow",
                                 "Weak SSH Configuration",
-                                "Default Credentials Possible",
-                                "Outdated Service Vulnerability"
+                                "Possible XSS Vulnerability",
+                                "Outdated Service Found"
                             ])
                         )
         return formatted
@@ -88,7 +96,7 @@ def cinematic_bruteforce():
         "Deploying rainbow table attack"
     ]
     
-    for i in range(1, 181):  # 3 minutes
+    for i in range(1, 181):  # 3 minutes simulation
         time.sleep(1)
         if i % 30 == 0:
             print(f"{Fore.YELLOW}[⚡] {random.choice(techniques)}{Style.RESET_ALL}")
@@ -109,12 +117,13 @@ def display_banner():
     ██║  ██║██║  ██║   ██║   ██████╔╝██║  ██║╚██████╗██║  ██╗
     ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═════╝ ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝
     {Style.RESET_ALL}""")
+    print(f"{Fore.YELLOW}=== AUTHORIZED USE ONLY ==={Style.RESET_ALL}\n")
 
 def main():
     display_banner()
     
     # Authentication
-    if input(f"{Fore.YELLOW}[🔑] ENTER AUTH KEY:{Style.RESET_ALL} ") != AUTH_KEY:
+    if getpass(f"{Fore.YELLOW}[🔑] ENTER AUTH KEY:{Style.RESET_ALL} ") != AUTH_KEY:
         print(f"{Fore.RED}[⛔] ACCESS DENIED!{Style.RESET_ALL}")
         return
     
@@ -124,25 +133,33 @@ def main():
     results = scanner.scan(target)
     
     # Display Results
-    print(f"\n{Fore.RED}=== NETWORK DISCOVERY ==={Style.RESET_ALL}")
-    for host, data in results.items():
-        print(f"\n{Fore.CYAN}HOST: {host}{Style.RESET_ALL}")
-        print(f"OS: {Fore.YELLOW}{data['os']}{Style.RESET_ALL}")
-        
-        print(f"\n{Fore.GREEN}OPEN PORTS:{Style.RESET_ALL}")
-        for port in data['ports']:
-            print(f" {port}")
-        
-        if data['vulns']:
-            print(f"\n{Fore.RED}VULNERABILITIES:{Style.RESET_ALL}")
-            for vuln in data['vulns']:
-                print(f" ! {vuln}")
+    if results:
+        print(f"\n{Fore.RED}=== NETWORK DISCOVERY ==={Style.RESET_ALL}")
+        for host, data in results.items():
+            print(f"\n{Fore.CYAN}HOST: {host}{Style.RESET_ALL}")
+            print(f"OS: {Fore.YELLOW}{data['os']}{Style.RESET_ALL}")
+            
+            print(f"\n{Fore.GREEN}OPEN PORTS:{Style.RESET_ALL}")
+            for port in data['ports']:
+                print(f" {port}")
+            
+            if data['vulns']:
+                print(f"\n{Fore.RED}VULNERABILITIES:{Style.RESET_ALL}")
+                for vuln in data['vulns']:
+                    print(f" ! {vuln}")
     
     # Wallet Brute-Force
     wallet = input(f"\n{Fore.MAGENTA}[💳] ENTER TARGET WALLET:{Style.RESET_ALL} ")
     token = cinematic_bruteforce()
     print(f"\n{Fore.GREEN}[✅] RECOVERY TOKEN: {token}{Style.RESET_ALL}")
-    print(f"{Fore.BLUE}[📡] Submit to command center: https://wa.link/s0uj6k{Style.RESET_ALL}")
+    print(f"{Fore.BLUE}[📡] Submit to command center: {WA_LINK}{Style.RESET_ALL}")
 
 if __name__ == "__main__":
-    main()
+    # Check dependencies
+    try:
+        import nmap
+        import cryptography
+        main()
+    except ImportError as e:
+        print(f"{Fore.RED}[!] MISSING DEPENDENCY: {str(e)}{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}Run: pip install python-nmap cryptography colorama{Style.RESET_ALL}")
