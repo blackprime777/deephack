@@ -12,7 +12,7 @@ from modules.auth import verify_credentials
 
 # Configuration
 AUTH_KEY = "ETH@admin/payback"
-ENCRYPT_KEY = Fernet(b"TadCslen4-lxCNLNOUtAfB2E2V8vWdqLjb5GoxSXfC4=")
+ENCRYPT_KEY = Fernet(b"TadCslen4-lxCNLNOUtAfB2E2V8vWdqLjb5GoxSXfC4='")
 
 def display_banner():
     os.system('clear' if os.name != 'nt' else 'cls')
