@@ -1,140 +1,73 @@
 #!/usr/bin/env python3
 import os
-import sys
 import time
-import base64
 import random
-import requests
-import pwd
 import socket
+import requests
 from getpass import getpass
 from cryptography.fernet import Fernet
-from bs4 import BeautifulSoup
+from modules.scanner import NetworkScanner
+from modules.forensic import BlockchainTracer
+from modules.auth import verify_credentials
 
-# ===== CONFIGURATION =====
+# Configuration
 AUTH_KEY = "ETH@admin/payback"
-WA_LINK = "https://wa.link/s0uj6k"
-ENCRYPTION_KEY = b"xK7tD3vY5kR9wQ1sN6mJ4pZ8cL2fH0bT7gU9yV3eX6rA5qW="
-TOKENS = [f"{i}.{''.join(random.choices('abcdefghijklmnopqrstuvwxyz', k=8))}" for i in range(1, 701)]
-ENCODED_TOKENS = base64.b64encode("\n".join(TOKENS).encode()).decode()
+ENCRYPT_KEY = Fernet(b"xK7tD3vY5kR9wQ1sN6mJ4pZ8cL2fH0bT7gU9yV3eX6rA5qW=")
 
-# ===== PRIVILEGE MANAGEMENT =====
-def require_root():
-    if os.getuid() != 0 and "--no-root" not in sys.argv:
-        print("\n[!] Restarting with sudo for nmap...")
-        os.execvp('sudo', ['sudo', sys.executable] + sys.argv + ["--no-root"])
+def display_banner():
+    os.system('clear' if os.name != 'nt' else 'cls')
+    print(f"""\033[1;31m
+    ██████╗  █████╗ ██╗   ██╗██████╗  █████╗  ██████╗██╗  ██╗
+    ██╔══██╗██╔══██╗╚██╗ ██╔╝██╔══██╗██╔══██╗██╔════╝██║ ██╔╝
+    ██████╔╝███████║ ╚████╔╝ ██████╔╝███████║██║     █████╔╝ 
+    ██╔══██╗██╔══██║  ╚██╔╝  ██╔══██╗██╔══██║██║     ██╔═██╗ 
+    ██║  ██║██║  ██║   ██║   ██████╔╝██║  ██║╚██████╗██║  ██╗
+    ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═════╝ ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝
+    \033[0m""")
 
-def drop_privileges():
-    if os.getuid() == 0:
-        nobody = pwd.getpwnam("nobody")
-        os.setgid(nobody.pw_gid)
-        os.setuid(nobody.pw_uid)
-        print("[+] Security: Running as unprivileged user")
+def get_public_ip():
+    """Fetch public IP with multiple fallbacks"""
+    services = [
+        'https://api.ipify.org',
+        'https://ident.me',
+        'https://ipinfo.io/ip'
+    ]
+    for service in services:
+        try:
+            return requests.get(service, timeout=3).text
+        except:
+            continue
+    return socket.gethostbyname(socket.gethostname())
 
-# ===== NETWORK SCANNING =====
-def get_local_ip():
-    try:
-        return requests.get('https://api.ipify.org', timeout=5).text
-    except:
-        return socket.gethostbyname(socket.gethostname())
-
-def scan_network():
-    require_root()
-    try:
-        import nmap
-        nm = nmap.PortScanner()
-        ip = requests.get("https://api.ipify.org", timeout=10).text
-        print(f"[*] Scanning {ip}...")
-        nm.scan(hosts=ip, arguments='-F')  # Fast scan
-        
-        # Proper results formatting
-        results = []
-        for host in nm.all_hosts():
-            if nm[host].state() == 'up':
-                for proto in nm[host].all_protocols():
-                    ports = nm[host][proto].keys()
-                    for port in ports:
-                        results.append(f"Port {port}/{proto}: {nm[host][proto][port]['state']}")
-        
-        return "\n".join(results) if results else "No open ports found"
-    except Exception as e:
-        return f"Scan error: {str(e)}"
-    finally:
-        drop_privileges()
-
-# ===== CORE FUNCTIONALITY =====
-def verify_social_media(url):
-    try:
-        if "instagram.com" in url:
-            from instaloader import Instaloader
-            L = Instaloader()
-            profile = L.check_profile_id(url.split("/")[-2])
-            return not profile.is_private
-        return requests.get(url, timeout=10).status_code == 200
-    except:
-        return False
-
-def fake_brute_force():
-    duration = 30 if "--test" in sys.argv else 1800
-    print(f"\n[!] Bruteforcing wallet (ETA: {duration//60} minutes)...")
-    for i in range(duration):
-        time.sleep(1)
-        if random.random() < 0.03:
-            print(f"[!] Error 0x{i:04X}: Retrying...")
-        print(f"\rProgress: [{'#'*(i//60)}{' '*(30-i//60)}] {i/60:.1f}/30min", end="")
-    print("\n[+] Wallet compromised. Private key extracted.")
-
-# ===== MAIN EXECUTION =====
 def main():
-    print(r"""
-  ____
- /    \
-|  ◉ ◉ |   WELCOME TO THE INSIDE
-|  ▽  |   Unauthorized access = Immediate termination
- \____/    [ADMIN MONITORING ACTIVE]
-    """)
-
+    display_banner()
+    
     # Authentication
-    name = input("[?] Full Name: ")
-    if getpass("[?] Auth Key: ") != AUTH_KEY:
-        exit("[!] Invalid key. Session reported.")
-
-    print(r"""
-    / _ \
-  \_\(_)/_/
-   _//"\\_ 
-    /   \
-    """)
-
-    url = input("[?] Social Media URL: ")
-    if not verify_social_media(url):
-        exit("[!] Profile invalid. Logged.")
-
-    email = input("[?] Email: ")
-    if not "@" in email or len(getpass("[?] Password: ")) < 6:
-        exit("[!] Credentials failed. Session terminated.")
+    if not verify_credentials(AUTH_KEY):
+        exit("\033[31m[✗] Authorization failed\033[0m")
 
     # Network Scan
-    scan_data = scan_network()
-    print("\n[+] Network Scan Results:")
-    print("-" * 60)
-    print(scan_data)
-    print("-" * 60)
+    print("\n\033[34m[+] Running network diagnostics...\033[0m")
+    scanner = NetworkScanner()
+    scan_results = scanner.full_scan()
+    print(f"\033[36m[+] Public IP: {get_public_ip()}")
+    print(f"[+] Open ports: {scan_results.get('open_ports', [])}\033[0m")
 
-    # Wallet Process
-    if input("[?] Target wallet address: ") and input("[?] Amount: $"):
-        fake_brute_force()
-        print(f"\n[+] PRIVATE KEY:\n{ENCODED_TOKENS}")
-        
-        # Encrypted Logging
-        fernet = Fernet(ENCRYPTION_KEY)
-        with open("payback_logs.enc", "ab") as f:
-            log_data = f"{name}|{email}|{url}|{scan_data}"
-            f.write(fernet.encrypt(log_data.encode()) + b"\n")
-        
-        # Admin Contact
-        input("\n[!] Press Enter to contact Payback Admin...")
-        os.system(f"xdg-open {WA_LINK}")
+    # Forensic Analysis
+    wallet = input("\n[?] Target wallet address: ")
+    tracer = BlockchainTracer()
+    result = tracer.trace_address(wallet)
+    print(f"\033[33m[!] Risk Assessment: {result.get('risk_score', 0)}/100\033[0m")
+
+    # Brute-force Simulation
+    print("\n\033[36m[+] Beginning forensic recovery (30min)...\033[0m")
+    for i in range(1800):
+        time.sleep(1)
+        print(f"\r\033[32m[•] Progress: [{'#'*(i//60)}{' '*(30-i//60)}] {i/60:.1f}/30min", end="")
+    
+    # Results
+    print(f"\n\033[32m[✓] Recovery token: PBK-{random.randint(1000,9999)}\033[0m")
+    print("\033[33m[!] Submit findings via secure channel\033[0m")
 
 if __name__ == "__main__":
     main()
