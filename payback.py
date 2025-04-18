@@ -11,8 +11,9 @@ from modules.auth import verify_operator
 
 # Initialize
 init(autoreset=True)
+
 API_KEY = "CBR7R8HS231KPHR151IT2URUZQYBTX3F1F"
-ENCRYPT_KEY = Fernet(b"CIMo5pvhqE3AIcRG44cxXpJgExoas8JF7Tq3MYKczaA='")
+ENCRYPT_KEY = Fernet(b"CIMo5pvhqE3AIcRG44cxXpJgExoas8JF7Tq3MYKczaA=")  # Valid Fernet key
 
 def show_banner():
     os.system('clear' if os.name != 'nt' else 'cls')
@@ -58,13 +59,16 @@ def main():
     scan_results = network_audit()
     print(f"\n{Fore.GREEN}[+] Scan Completed:{Style.RESET_ALL}")
     print(f"- Duration: {scan_results.get('duration_mins')} minutes")
-    print(f"- Open Ports: {len(scan_results.get('open_ports',{}))} discovered")
+    print(f"- Open Ports: {len(scan_results.get('open_ports', {}))} discovered")
 
     # Blockchain Investigation
     print(f"\n{Fore.BLUE}=== BLOCKCHAIN ANALYSIS ==={Style.RESET_ALL}")
     wallet = input(f"{Fore.WHITE}[?] Enter wallet address: {Style.RESET_ALL}")
     forensic_data = forensic_analysis(wallet)
     print(f"{Fore.YELLOW}[!] Risk Assessment: {forensic_data.get('risk_score')}/100{Style.RESET_ALL}")
+    if 'tx_count' in forensic_data:
+        print(f"    - Total Transactions: {forensic_data.get('tx_count')}")
+        print(f"    - High-Value Transfers (>1 ETH): {forensic_data.get('high_value_txs')}")
 
     # Forensic Process
     simulate_recovery()
