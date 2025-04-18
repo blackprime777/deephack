@@ -34,6 +34,10 @@ pip install -r requirements.txt
 
 
 
+HOW TO INSTALL AND RUN VIRTUAL ENV
+cd path/to/deephack
+python3 -m venv venv
+source venv/bin/activate
 
 
 
