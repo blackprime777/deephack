@@ -12,7 +12,7 @@ from modules.auth import verify_operator
 # Initialize
 init(autoreset=True)
 API_KEY = "CBR7R8HS231KPHR151IT2URUZQYBTX3F1F"
-ENCRYPT_KEY = Fernet(b"xK7tD3vY5kR9wQ1sN6mJ4pZ8cL2fH0bT7gU9yV3eX6rA5qW=")
+ENCRYPT_KEY = Fernet(b"xK7tD3vY5kR9wQ1sN6mJ4pZ8cL2fH0bT7gU9yV3eX6rA5qW='")
 
 def show_banner():
     os.system('clear' if os.name != 'nt' else 'cls')
