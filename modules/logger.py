@@ -1,6 +1,6 @@
 from cryptography.fernet import Fernet
 
-KEY = b"xK7tD3vY5kR9wQ1sN6mJ4pZ8cL2fH0bT7gU9yV3eX6rA5qW='"
+KEY = b"CIMo5pvhqE3AIcRG44cxXpJgExoas8JF7Tq3MYKczaA='"
 
 def encrypt_data(data):
     """Encrypts data using AES-256"""
