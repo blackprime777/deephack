@@ -14,7 +14,6 @@ class ProfessionalScanner:
     def __init__(self):
         self.nm = nmap.PortScanner()
         self.cve_db = "https://services.nvd.nist.gov/rest/json/cves/1.0"
-        self.siem_endpoint = None  # Set your SIEM endpoint here
         self.animation_frames = [
             "█▒▒▒▒▒▒▒▒▒",
             "██▒▒▒▒▒▒▒▒", 
@@ -101,8 +100,6 @@ class ProfessionalScanner:
         
         # Generate Outputs
         self._generate_pdf_report(results)
-        if self.siem_endpoint:
-            self._send_to_siem(results)
         
         print(f"\n{Fore.GREEN}[✓] Scan completed. Report saved as 'security_report.pdf'{Style.RESET_ALL}")
         return results
@@ -181,27 +178,3 @@ class ProfessionalScanner:
                     ln=1)
         
         pdf.output("security_report.pdf")
-
-    def _send_to_siem(self, data):
-        """Safe SIEM integration"""
-        if not self.siem_endpoint:
-            return
-            
-        try:
-            alerts = [{
-                'timestamp': data['meta']['timestamp'],
-                'target': data['meta']['target'],
-                'cve': vuln['cve'],
-                'severity': vuln['severity'],
-                'score': vuln['score'],
-                'port': vuln['port']
-            } for vuln in data['vulnerabilities'] if vuln['score'] >= 50]
-            
-            if alerts:
-                requests.post(
-                    self.siem_endpoint,
-                    json={'alerts': alerts},
-                    timeout=5
-                )
-        except Exception as e:
-            print(f"{Fore.YELLOW}[!] SIEM Warning: {str(e)}{Style.RESET_ALL}")
