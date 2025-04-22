@@ -7,7 +7,6 @@ import requests
 from cvss import CVSS3
 import warnings
 
-# Disable PDF font warnings
 warnings.filterwarnings('ignore', category=UserWarning, module='fpdf')
 
 class ProfessionalScanner:
@@ -16,7 +15,7 @@ class ProfessionalScanner:
         self.cve_db = "https://services.nvd.nist.gov/rest/json/cves/1.0"
         self.animation_frames = [
             "█▒▒▒▒▒▒▒▒▒",
-            "██▒▒▒▒▒▒▒▒", 
+            "██▒▒▒▒▒▒▒▒",
             "███▒▒▒▒▒▒▒",
             "████▒▒▒▒▒▒",
             "█████▒▒▒▒▒",
@@ -71,31 +70,25 @@ class ProfessionalScanner:
         except:
             return False
 
-   def run_scan(self, target, profile='standard', use_sudo=False):
-    """Complete security assessment with all features"""
-    print(f"\n{Fore.YELLOW}[⚡] Starting {profile.upper()} Assessment{Style.RESET_ALL}")
-    
-    # Phase 1: Host Discovery
-    self._print_scan_animation(target, "1/3")
-    self.nm.scan(hosts=target, arguments='-sn')
-    
-    # Phase 2: Deep Scanning
-    self._print_scan_animation(target, "2/3")
-    scan_results = self.nm.scan(
-        hosts=target,
-        arguments=self.scan_profiles[profile],
-        sudo=use_sudo
-    )
-    
-    # Phase 3: Analysis
-    self._print_scan_animation(target, "3/3")
-    results = self._analyze_results(scan_results, profile)
-    
-    # Generate Outputs
-    self._generate_pdf_report(results)
-    
-    print(f"\n{Fore.GREEN}[✓] Scan completed. Report saved as 'security_report.pdf'{Style.RESET_ALL}")
-    return results
+    def run_scan(self, target, profile='standard', use_sudo=False):
+        print(f"\n{Fore.YELLOW}[⚡] Starting {profile.upper()} Assessment{Style.RESET_ALL}")
+        self._print_scan_animation(target, "1/3")
+        self.nm.scan(hosts=target, arguments='-sn')
+
+        self._print_scan_animation(target, "2/3")
+        scan_results = self.nm.scan(
+            hosts=target,
+            arguments=self.scan_profiles[profile],
+            sudo=use_sudo
+        )
+
+        self._print_scan_animation(target, "3/3")
+        results = self._analyze_results(scan_results, profile)
+
+        self._generate_pdf_report(results)
+
+        print(f"\n{Fore.GREEN}[✓] Scan completed. Report saved as 'security_report.pdf'{Style.RESET_ALL}")
+        return results
 
     def _analyze_results(self, raw_data, profile):
         results = {
@@ -149,19 +142,20 @@ class ProfessionalScanner:
         pdf.set_font("helvetica", size=10)
         for service in data['services']:
             pdf.cell(200, 8,
-                txt=f"Port {service['port']}/{service['protocol']}: {service['service']} {service['version']}",
-                ln=1)
+                     txt=f"Port {service['port']}/{service['protocol']}: {service['service']} {service['version']}",
+                     ln=1)
 
         if data['vulnerabilities']:
             pdf.set_font("helvetica", 'B', 14)
             pdf.cell(200, 10, txt="Identified Vulnerabilities:", ln=1)
             pdf.set_font("helvetica", size=10)
+
             for vuln in sorted(data['vulnerabilities'], key=lambda x: x['score'], reverse=True):
                 pdf.multi_cell(0, 7,
-                    txt=f"{vuln['cve']} ({vuln['score']:.1f}/100) [{'EXPLOIT AVAILABLE' if vuln['exploit_available'] else 'No known exploit'}]\n"
-                    f"Port: {vuln['port']} | Severity: {vuln['severity']}\n"
-                    f"Description: {vuln['description']}\n"
-                    "--------------------------------------------------",
-                    ln=1)
+                               txt=f"{vuln['cve']} ({vuln['score']:.1f}/100) [{'EXPLOIT AVAILABLE' if vuln['exploit_available'] else 'No known exploit'}]\n"
+                                   f"Port: {vuln['port']} | Severity: {vuln['severity']}\n"
+                                   f"Description: {vuln['description']}\n"
+                                   "--------------------------------------------------",
+                               ln=1)
 
         pdf.output("security_report.pdf")
