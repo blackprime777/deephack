@@ -71,24 +71,31 @@ class ProfessionalScanner:
         except:
             return False
 
-    def run_scan(self, target, profile='standard'):
-        print(f"\n{Fore.YELLOW}[⚡] Starting {profile.upper()} Assessment{Style.RESET_ALL}")
-        self._print_scan_animation(target, "1/3")
-        self.nm.scan(hosts=target, arguments='-sn')
-
-        self._print_scan_animation(target, "2/3")
-        scan_results = self.nm.scan(
-            hosts=target,
-            arguments=self.scan_profiles[profile],
-            sudo=False  # Make it safe for Termux (no sudo)
-        )
-
-        self._print_scan_animation(target, "3/3")
-        results = self._analyze_results(scan_results, profile)
-        self._generate_pdf_report(results)
-
-        print(f"\n{Fore.GREEN}[✓] Scan completed. Report saved as 'security_report.pdf'{Style.RESET_ALL}")
-        return results
+   def run_scan(self, target, profile='standard', use_sudo=False):
+    """Complete security assessment with all features"""
+    print(f"\n{Fore.YELLOW}[⚡] Starting {profile.upper()} Assessment{Style.RESET_ALL}")
+    
+    # Phase 1: Host Discovery
+    self._print_scan_animation(target, "1/3")
+    self.nm.scan(hosts=target, arguments='-sn')
+    
+    # Phase 2: Deep Scanning
+    self._print_scan_animation(target, "2/3")
+    scan_results = self.nm.scan(
+        hosts=target,
+        arguments=self.scan_profiles[profile],
+        sudo=use_sudo
+    )
+    
+    # Phase 3: Analysis
+    self._print_scan_animation(target, "3/3")
+    results = self._analyze_results(scan_results, profile)
+    
+    # Generate Outputs
+    self._generate_pdf_report(results)
+    
+    print(f"\n{Fore.GREEN}[✓] Scan completed. Report saved as 'security_report.pdf'{Style.RESET_ALL}")
+    return results
 
     def _analyze_results(self, raw_data, profile):
         results = {
