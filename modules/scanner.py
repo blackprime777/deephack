@@ -70,27 +70,40 @@ class ProfessionalScanner:
         except:
             return False
 
-    def run_scan(self, target, profile='standard', use_sudo=False):
-        print(f"\n{Fore.YELLOW}[⚡] Starting {profile.upper()} Assessment{Style.RESET_ALL}")
-        self._print_scan_animation(target, "1/3")
-        self.nm.scan(hosts=target, arguments='-sn')
+   def run_scan(self, target, profile='standard', use_sudo=False):
+    """Complete security assessment with all features"""
+    print(f"\n{Fore.YELLOW}[⚡] Starting {profile.upper()} Assessment{Style.RESET_ALL}")
 
-        self._print_scan_animation(target, "2/3")
-        scan_results = self.nm.scan(
-            hosts=target,
-            arguments=self.scan_profiles[profile],
-            sudo=use_sudo
-        )
+    # Phase 1: Host Discovery
+    self._print_scan_animation(target, "1/3")
+    self.nm.scan(hosts=target, arguments='-sn')
 
-        self._print_scan_animation(target, "3/3")
-        results = self._analyze_results(scan_results, profile)
+    # Phase 2: Deep Scanning
+    self._print_scan_animation(target, "2/3")
 
-        self._generate_pdf_report(results)
+    # Select scan profile and downgrade if Termux (no sudo)
+    arguments = self.scan_profiles.get(profile, self.scan_profiles['standard'])
 
-        print(f"\n{Fore.GREEN}[✓] Scan completed. Report saved as 'security_report.pdf'{Style.RESET_ALL}")
-        return results
+    if not use_sudo:
+        arguments = arguments.replace("-sS", "-sT").replace("-O", "")  # Remove root-required flags
 
-    def _analyze_results(self, raw_data, profile):
+    scan_results = self.nm.scan(
+        hosts=target,
+        arguments=arguments,
+        sudo=use_sudo
+    )
+
+    # Phase 3: Analysis
+    self._print_scan_animation(target, "3/3")
+    results = self._analyze_results(scan_results, profile)
+
+    # Generate Outputs
+    self._generate_pdf_report(results)
+
+    print(f"\n{Fore.GREEN}[✓] Scan completed. Report saved as 'security_report.pdf'{Style.RESET_ALL}")
+    return results
+
+def _analyze_results(self, raw_data, profile):
         results = {
             'meta': {
                 'target': next(iter(raw_data['scan'])),
